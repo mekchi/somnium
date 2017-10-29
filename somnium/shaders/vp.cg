@@ -1,0 +1,38 @@
+
+float water_fresnel(float3 I, float3 N)
+{
+	float R0 = pow(1.0 - 1.133, 2) / pow(1.0 + 1.133, 2);
+
+	return R0 + (1.0 - R0) * pow(1.0 + dot(I, N), 5);
+}
+
+void main(float4 position : POSITION,
+			float3 normal   : NORMAL,
+   
+			out float4 o_position		: POSITION,
+			out float3 incident			: TEXCOORD0,
+			out float3 o_normal			: TEXCOORD1,
+			out float2 screen_coord     : TEXCOORD2,
+			out float reflection_factor : COLOR,
+
+			uniform float4x4 texMatrix     : state.matrix.texture,
+			uniform float4x4 modelViewProj : state.matrix.mvp, 
+			uniform float4x4 modelToWorld  : state.matrix.modelview)
+{
+	float3 eye_pos = float3(0.0, 0.0, 0.0);
+
+	o_position = mul(modelViewProj, position);
+
+	float3 posW = mul(modelToWorld, position).xyz;
+	normal = normalize(mul((float3x3)modelToWorld, normal));
+
+	incident = normalize(posW - eye_pos);
+
+	reflection_factor = water_fresnel(incident, normal);
+
+	incident = mul((float3x3)texMatrix, incident);
+	o_normal = mul((float3x3)texMatrix, normal);
+
+	screen_coord = o_position.xy / o_position.w;
+	screen_coord = 0.5 * (screen_coord + float2(1.0, 1.0));
+}
